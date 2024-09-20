@@ -90,23 +90,25 @@ while(k < opts.n_iters):
   k += 1
   sys.stderr.write(f"IBM 2 EM Iteration : {k}\n")
   # initialze
-  fe_count = defaultdict(int)
-  f_count = defaultdict(int)
-  count_a = defaultdict(int)
-  total_a = defaultdict(int)
+  fe_count = defaultdict(float)
+  f_count = defaultdict(float)
+  count_a = defaultdict(float)
+  total_a = defaultdict(float)
 
   # for all sentence pairs e,f
   for (n, (e, f)) in enumerate(bitext):
     l_e, l_f = len(e), len(f)
     # compute normalization
+    s_total = defaultdict(float)
     for (j, e_j) in enumerate(e):
-      s_total = defaultdict(float)
+      # s_total = defaultdict(float)
       for (i, f_i) in enumerate(f):
         s_total[e_j] += p_theta[(e_j, f_i)] * a[(i, j, l_e, l_f)]
       
+    for (j, e_j) in enumerate(e):
       # collect counts
       for (i, f_i) in enumerate(f):
-        c = p_theta[(e_j, f_i)] * a[(i, j, l_e, l_f)] / s_total[e_j]
+        c = (p_theta[(e_j, f_i)] * a[(i, j, l_e, l_f)]) / s_total[e_j]
         fe_count[(e_j, f_i)] += c
         f_count[f_i] += c
         count_a[(i, j, l_e, l_f)] += c
@@ -115,7 +117,7 @@ while(k < opts.n_iters):
   for (e_j, f_i) in fe_count.keys():
     p_theta[(e_j, f_i)] = fe_count[(e_j, f_i)] / f_count[f_i]
   
-  for (i, j, l_e, l_f) in a.keys():
+  for (i, j, l_e, l_f) in count_a.keys():
     a[(i, j, l_e, l_f)] = count_a[(i, j, l_e, l_f)] / total_a[(j, l_e, l_f)]
 
 sys.stderr.write("Finished Training IBM 2 EM ALgorithm.\n")    
@@ -126,9 +128,12 @@ for (n, (e, f)) in enumerate(bitext):
   for (i, f_i) in enumerate(f):
     best_prob = 0 # keeps track of the best alignment probability
     best_j = 0 # keeps track of the best alignment
+    l_f = len(f)
     for (j, e_j) in enumerate(e):
-      if p_theta[(e_j, f_i)] > best_prob:
-        best_prob = p_theta[(e_j, f_i)]
+      l_e = len(e)
+      prob = p_theta[(e_j, f_i)] * a[(i, j, l_e, l_f)]
+      if prob > best_prob:
+        best_prob = prob
         best_j = j
 
     sys.stdout.write("%i-%i " % (i,best_j))
